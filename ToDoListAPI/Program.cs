@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using ToDoListAPI.Data;
+using ToDoListAPI.Repositories;
+using ToDoListAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,16 @@ builder.Services.AddSwaggerGen
 
 builder.Services.AddDbContext<ToDoListContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IToDoItemRepository, ToDoItemRepository>();
+builder.Services.AddScoped<IToDoItemService, ToDoItemService>();
+
+builder.Services.AddControllers();
+builder.Services.AddAuthorization();
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole(); 
+builder.Logging.AddDebug();
 
 var app = builder.Build();
 

@@ -1,11 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ToDoListAPI.Models;
+namespace ToDoListAPI.DTOs;
 
-public class ToDoItem {
-
-    [Key]
-    public int ToDoItemId { get; set;}
+public class ToDoItemRequest  {
 
     [Required]
     [MaxLength(100)]

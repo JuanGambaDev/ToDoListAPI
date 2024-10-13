@@ -11,8 +11,8 @@ using ToDoListAPI.Data;
 namespace ToDoListAPI.Migrations
 {
     [DbContext(typeof(ToDoListContext))]
-    [Migration("20241013020753_ToDoItem Migration")]
-    partial class ToDoItemMigration
+    [Migration("20241013032719_ToDoItem migration")]
+    partial class ToDoItemmigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -37,7 +37,7 @@ namespace ToDoListAPI.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");

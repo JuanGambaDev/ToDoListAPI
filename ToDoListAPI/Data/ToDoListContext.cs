@@ -18,11 +18,11 @@ public class ToDoListContext : DbContext {
                 ToDoItem.ToTable("to_do_items");
                 ToDoItem.HasKey(p => p.ToDoItemId);
                 ToDoItem.Property(p => p.ToDoItemId).ValueGeneratedOnAdd();
-                ToDoItem.Property(p => p.Name).IsRequired().HasMaxLength(100);
+                ToDoItem.Property(p => p.Title).IsRequired().HasMaxLength(100);
                 ToDoItem.Property(p => p.Description).IsRequired().HasMaxLength(200);
             }
         );
-        
+
     }
 
 }
