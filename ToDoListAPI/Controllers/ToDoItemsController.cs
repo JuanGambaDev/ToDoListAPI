@@ -16,6 +16,19 @@ public class ToDoItemsController : ControllerBase
         _toDoItemService = toDoItemService;
     }
 
+    [HttpGet("{itemId}")]
+    public async Task<IActionResult> GetToDoItemById (int itemId)
+    {
+        var item = await _toDoItemService.GetItemByIdAsync(itemId);
+        
+        if (item == null)
+        {
+            return NotFound(); // Devuelve 404 si no se encuentra el recurso
+        }
+
+        return Ok(item);
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateToDoItem(ToDoItemRequest newItem){
 
@@ -26,31 +39,24 @@ public class ToDoItemsController : ControllerBase
 
         var toDoItemCreated = await _toDoItemService.AddItemAsync(newItem);
 
-        return CreatedAtAction(nameof(GetToDoItems), new { id = toDoItemCreated.ToDoItemId }, toDoItemCreated);
+        return CreatedAtAction(nameof(GetToDoItemById), new { id = toDoItemCreated.ToDoItemId }, toDoItemCreated);
     }
 
-    [HttpGet("{itemId}")]
-    public async Task<IActionResult> GetToDoItems (int? itemId = null)
-    {
-        if (itemId.HasValue)
+    [HttpPut("itemId")]
+    public async Task<IActionResult> UpdateToDoItem (int itemId, ToDoItemRequest itemRequest){
+        if (!ModelState.IsValid)
         {
-            // Si se proporciona un ID, devuelve el elemento correspondiente
-            var item = await _toDoItemService.GetItemByIdAsync(itemId.Value);
-            
-            if (item == null)
-            {
-                return NotFound(); // Devuelve 404 si no se encuentra el recurso
-            }
-
-            return Ok(item); // Devuelve el recurso encontrado
+        return BadRequest(ModelState); // Devuelve el estado del modelo si no es válido
         }
-        else
+        
+        var itemUpdated = await _toDoItemService.UpdateItemAsync(itemId, itemRequest);
+
+        if (itemUpdated == null)
         {
-            // Si no se proporciona un ID, devuelve la lista de todos los elementos
-            var items = await _toDoItemService.GetItemsAsync();
-            return Ok(items); // Devuelve la lista de elementos
+            return NotFound(); // Devuelve 404 si no se encuentra el recurso
         }
 
+        return Ok(itemUpdated);
     }
 }
 

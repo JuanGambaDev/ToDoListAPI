@@ -13,7 +13,18 @@ public class ToDoItemService : IToDoItemService {
         _toDoItemRepository = toDoItemRepository;
     }
 
-    public async Task<ToDoItem> AddItemAsync (ToDoItemRequest newItem){
+    public async Task<IEnumerable<ToDoItem>> GetItemsAsync()
+    {
+        return await _toDoItemRepository.GetItemsAsync();
+    }
+
+    public async Task<ToDoItem> GetItemByIdAsync(int itemId)
+    {
+        return await _toDoItemRepository.GetItemByIdAsync (itemId);
+    }
+
+    public async Task<ToDoItem> AddItemAsync (ToDoItemRequest newItem)
+    {
         var newToDoItem = new ToDoItem 
         {
             Title = newItem.Title,
@@ -25,13 +36,21 @@ public class ToDoItemService : IToDoItemService {
         return createdItem;
     }
 
-    public async Task<ToDoItem> GetItemByIdAsync(int itemId)
+    public async Task<ToDoItem> UpdateItemAsync (int itemId, ToDoItemRequest itemRequest)
     {
-        return await _toDoItemRepository.GetItemByIdAsync (itemId);
-    }
+        var existingItem = await _toDoItemRepository.GetItemByIdAsync(itemId);
 
-    public async Task<IEnumerable<ToDoItem>> GetItemsAsync(){
-        return await _toDoItemRepository.GetItemsAsync();
+        if (existingItem == null)
+        {
+            return null;
+        }
+
+        existingItem.Title = itemRequest.Title;
+        existingItem.Description = itemRequest.Description;
+
+        var updatedItem = await _toDoItemRepository.UpdateItemAsync (existingItem);
+
+        return updatedItem;
     }
 
 

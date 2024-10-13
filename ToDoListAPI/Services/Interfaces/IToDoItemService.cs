@@ -3,10 +3,10 @@ using ToDoListAPI.Models;
 
 namespace ToDoListAPI.Services;
 
-public interface IToDoItemService {
-    Task<ToDoItem> AddItemAsync(ToDoItemRequest newItem);
-
-    Task<ToDoItem> GetItemByIdAsync(int itemId);
-
+public interface IToDoItemService 
+{
     Task<IEnumerable<ToDoItem>> GetItemsAsync();
+    Task<ToDoItem> GetItemByIdAsync(int itemId);
+    Task<ToDoItem> AddItemAsync(ToDoItemRequest newItem);
+    Task<ToDoItem> UpdateItemAsync(int id, ToDoItemRequest item);
 }

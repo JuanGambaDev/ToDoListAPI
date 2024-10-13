@@ -27,4 +27,11 @@ public class ToDoItemRepository : IToDoItemRepository {
         return await _context.toDoItems.ToListAsync();
     }
 
+    public async Task<ToDoItem> UpdateItemAsync (ToDoItem item)
+    {
+        _context.toDoItems.Update(item);
+        await _context.SaveChangesAsync();
+        return item;
+    }
+
 }
