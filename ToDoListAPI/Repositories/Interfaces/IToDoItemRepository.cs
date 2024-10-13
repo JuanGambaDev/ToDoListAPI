@@ -8,7 +8,9 @@ public interface IToDoItemRepository {
 
     Task<ToDoItem> GetItemByIdAsync (int itemId);
 
-    Task<IEnumerable<ToDoItem>> GetItemsAsync ();
+    Task<IQueryable<ToDoItem>> GetItemsAsync ();
 
     Task<ToDoItem> UpdateItemAsync (ToDoItem item);
+
+    Task DeleteItemAsync (int itemId);
 }

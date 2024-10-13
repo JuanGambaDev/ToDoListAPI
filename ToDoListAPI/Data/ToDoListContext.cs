@@ -5,7 +5,7 @@ namespace ToDoListAPI.Data;
 
 public class ToDoListContext : DbContext {
 
-    public DbSet<ToDoItem> toDoItems { get; set; }
+    public DbSet<ToDoItem> ToDoItems { get; set; }
 
     public ToDoListContext(DbContextOptions<ToDoListContext> options) : base(options) { }
 

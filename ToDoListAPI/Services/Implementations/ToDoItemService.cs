@@ -1,58 +1,140 @@
 using ToDoListAPI.Models;
 using ToDoListAPI.DTOs;
 using ToDoListAPI.Repositories;
-using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Threading.Tasks;
 
-namespace ToDoListAPI.Services;
-
-public class ToDoItemService : IToDoItemService {
-
-    private readonly IToDoItemRepository _toDoItemRepository;
-
-    public ToDoItemService(IToDoItemRepository toDoItemRepository) {
-        _toDoItemRepository = toDoItemRepository;
-    }
-
-    public async Task<IEnumerable<ToDoItem>> GetItemsAsync()
+namespace ToDoListAPI.Services
+{
+    public class ToDoItemService : IToDoItemService
     {
-        return await _toDoItemRepository.GetItemsAsync();
-    }
+        private readonly IToDoItemRepository _toDoItemRepository;
+        private readonly ILogger<ToDoItemService> _logger;
 
-    public async Task<ToDoItem> GetItemByIdAsync(int itemId)
-    {
-        return await _toDoItemRepository.GetItemByIdAsync (itemId);
-    }
-
-    public async Task<ToDoItem> AddItemAsync (ToDoItemRequest newItem)
-    {
-        var newToDoItem = new ToDoItem 
+        public ToDoItemService(IToDoItemRepository toDoItemRepository, ILogger<ToDoItemService> logger)
         {
-            Title = newItem.Title,
-            Description = newItem.Description,
-        };
-
-        var createdItem = await _toDoItemRepository.AddItemAsync (newToDoItem);
-
-        return createdItem;
-    }
-
-    public async Task<ToDoItem> UpdateItemAsync (int itemId, ToDoItemRequest itemRequest)
-    {
-        var existingItem = await _toDoItemRepository.GetItemByIdAsync(itemId);
-
-        if (existingItem == null)
-        {
-            return null;
+            _toDoItemRepository = toDoItemRepository;
+            _logger = logger;
         }
 
-        existingItem.Title = itemRequest.Title;
-        existingItem.Description = itemRequest.Description;
+        public async Task<PagedResult<ToDoItem>> GetItemsAsync(int page, int limit, string filter, string sortBy)
+        {
+            try
+            {
+                var query = await _toDoItemRepository.GetItemsAsync();
 
-        var updatedItem = await _toDoItemRepository.UpdateItemAsync (existingItem);
+                // Filtrado
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    query = query.Where(item => item.Title.Contains(filter) || item.Description.Contains(filter));
+                }
 
-        return updatedItem;
+                // Ordenamiento
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    query = sortBy.Equals("title", StringComparison.OrdinalIgnoreCase)
+                        ? query.OrderBy(item => item.Title)
+                        : query.OrderBy(item => item.Description);
+                }
+
+                // Paginación
+                var totalItems = await query.CountAsync();
+                var items = await query.Skip((page - 1) * limit).Take(limit).ToListAsync();
+
+                return new PagedResult<ToDoItem>
+                {
+                    Data = items,
+                    Page = page,
+                    Limit = limit,
+                    Total = totalItems
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching to-do items.");
+                throw new Exception("Error fetching to-do items.", ex);
+            }
+        }
+
+        public async Task<ToDoItem> GetItemByIdAsync(int itemId)
+        {
+            try
+            {
+                return await _toDoItemRepository.GetItemByIdAsync(itemId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching to-do item with ID {ItemId}.", itemId);
+                throw new Exception("Error fetching the to-do item.", ex);
+            }
+        }
+
+        public async Task<ToDoItem> AddItemAsync(ToDoItemRequest newItem)
+        {
+            try
+            {
+                var newToDoItem = new ToDoItem
+                {
+                    Title = newItem.Title,
+                    Description = newItem.Description,
+                };
+
+                return await _toDoItemRepository.AddItemAsync(newToDoItem);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding a new to-do item.");
+                throw new Exception("Error adding the to-do item.", ex);
+            }
+        }
+
+        public async Task<ToDoItem> UpdateItemAsync(int itemId, ToDoItemRequest itemRequest)
+        {
+            try
+            {
+                var existingItem = await _toDoItemRepository.GetItemByIdAsync(itemId);
+
+                if (existingItem == null)
+                {
+                    return null;
+                }
+
+                existingItem.Title = itemRequest.Title;
+                existingItem.Description = itemRequest.Description;
+
+                return await _toDoItemRepository.UpdateItemAsync(existingItem);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating to-do item with ID {ItemId}.", itemId);
+                throw new Exception("Error updating the to-do item.", ex);
+            }
+        }
+
+        public async Task<bool> DeleteItemAsync(int itemId)
+        {
+            try
+            {
+                var existingItem = await _toDoItemRepository.GetItemByIdAsync(itemId);
+
+                if (existingItem == null)
+                {
+                    return false;
+                }
+
+                // Lógica de autorización (opcional)
+                // Aquí puedes verificar permisos si es necesario
+
+                await _toDoItemRepository.DeleteItemAsync(itemId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting to-do item with ID {ItemId}.", itemId);
+                throw new Exception("Error deleting the to-do item.", ex);
+            }
+        }
     }
-
-
-
 }
