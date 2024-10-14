@@ -36,6 +36,18 @@ builder.Logging.AddDebug();
 
 var app = builder.Build();
 
+// Ensure the database is created
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<ToDoListContext>();
+
+    if (app.Environment.IsDevelopment())
+    {
+        context.Database.EnsureCreated(); 
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
