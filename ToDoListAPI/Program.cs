@@ -3,6 +3,7 @@ using Microsoft.OpenApi.Models;
 using ToDoListAPI.Data;
 using ToDoListAPI.Repositories;
 using ToDoListAPI.Services;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +14,10 @@ builder.Services.AddSwaggerGen
     (c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "ToDoListAPI", Version = "v1" });
+            // Cargar comentarios XML
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            c.IncludeXmlComments(xmlPath);
         }
     );
 

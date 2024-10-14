@@ -9,6 +9,10 @@ using ToDoListAPI.Services;
 
 namespace ToDoListAPI.Controllers
 {
+    /// <summary>
+    /// Controller to handle task list operations.
+    /// Provides endpoints to create, read, update, and delete task list items.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class ToDoItemsController : ControllerBase
@@ -16,15 +20,39 @@ namespace ToDoListAPI.Controllers
         private readonly IToDoItemService _toDoItemService;
         private readonly ILogger<ToDoItemsController> _logger;
 
+        /// <summary>
+        /// Controller constructor that injects the task list service and logger.
+        /// </summary>
+        /// <param name="toDoItemService">Service to manage tasks.</param>
+        /// <param name="logger">Logger to record events and errors.</param>
         public ToDoItemsController(IToDoItemService toDoItemService, ILogger<ToDoItemsController> logger)
         {
             _toDoItemService = toDoItemService;
             _logger = logger;
         }
 
+        /// <summary>
+        /// Gets a paginated list of task list items.
+        /// </summary>
+        /// <param name="page">Page number for pagination (by default it is 1, it cannot be less than or equal to 0).</param>
+        /// <param name="limit">Maximum number of elements per page (default is 10, cannot be less than or equal to 0).</param>
+        /// <param name="filter">Optional filter that gets the tasks (ToDoItems) that contain in its id, title or description the value provided</param>
+        /// <param name="sortBy">Optional field to sort the task list (valid parameters are id, title, description).</param>
+        /// <returns>A response with to-do list items.</returns>
         [HttpGet]
         public async Task<IActionResult> GetToDoItems(int page = 1, int limit = 10, string filter = null, string sortBy = null)
         {
+            // Validación de parámetros de paginación
+            if (page <= 0)
+            {
+                return BadRequest("El parámetro 'page' debe ser mayor que 0.");
+            }
+
+            if (limit <= 0)
+            {
+                return BadRequest("El parámetro 'limit' debe ser mayor que 0.");
+            }
+
             try
             {
                 var pagedResult = await _toDoItemService.GetItemsAsync(page, limit, filter, sortBy);
@@ -37,6 +65,11 @@ namespace ToDoListAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Gets a to-do item from the list by its ID.
+        /// </summary>
+        /// <param name="itemId">ID of the to-do item.</param>
+        /// <returns>A response with the found item or a 404 status if not found.</returns>
         [HttpGet("{itemId}")]
         public async Task<IActionResult> GetToDoItemById(int itemId)
         {
@@ -57,9 +90,15 @@ namespace ToDoListAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Creates a new item in the to-do list.
+        /// </summary>
+        /// <param name="newItem">Details of the new to-do item.</param>
+        /// <returns>A response with the created item, or a 400 status if the request is invalid.</returns>
         [HttpPost]
         public async Task<IActionResult> CreateToDoItem(ToDoItemRequest newItem)
         {
+            // Model validation
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -68,7 +107,7 @@ namespace ToDoListAPI.Controllers
             try
             {
                 var toDoItemCreated = await _toDoItemService.AddItemAsync(newItem);
-                return CreatedAtAction(nameof(GetToDoItemById), new { id = toDoItemCreated.ToDoItemId }, toDoItemCreated);
+                return CreatedAtAction(nameof(GetToDoItemById), new { itemId = toDoItemCreated.ToDoItemId }, toDoItemCreated);
             }
             catch (Exception ex)
             {
@@ -77,9 +116,16 @@ namespace ToDoListAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Updates an existing item in the to-do list.
+        /// </summary>
+        /// <param name="itemId">ID of the item to update.</param>
+        /// <param name="itemRequest">Updated details of the item.</param>
+        /// <returns>A response with the updated item, or a 404 status if not found.</returns>
         [HttpPut("{itemId}")]
         public async Task<IActionResult> UpdateToDoItem(int itemId, ToDoItemRequest itemRequest)
         {
+            // Model validation
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -102,6 +148,11 @@ namespace ToDoListAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Deletes an item from the to-do list.
+        /// </summary>
+        /// <param name="itemId">ID of the item to delete.</param>
+        /// <returns>A response with a 204 status if deletion is successful, or a 404 status if not found.</returns>
         [HttpDelete("{itemId}")]
         public async Task<IActionResult> DeleteToDoItem(int itemId)
         {

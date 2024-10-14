@@ -25,21 +25,41 @@ namespace ToDoListAPI.Services
             {
                 var query = await _toDoItemRepository.GetItemsAsync();
 
-                // Filtrado
+                // Filter
                 if (!string.IsNullOrEmpty(filter))
                 {
-                    query = query.Where(item => item.Title.Contains(filter) || item.Description.Contains(filter));
+                    // Try convert the filter to an int for filter by Id 
+                    if (int.TryParse(filter, out var id))
+                    {
+                        query = query.Where(item => item.ToDoItemId == id);
+                    }
+                    else
+                    {
+                        // filter by title or description if isn't an Id 
+                        query = query.Where(item => item.Title.Contains(filter) || item.Description.Contains(filter));
+                    }
                 }
 
-                // Ordenamiento
+                // OrderBy
                 if (!string.IsNullOrEmpty(sortBy))
                 {
-                    query = sortBy.Equals("title", StringComparison.OrdinalIgnoreCase)
-                        ? query.OrderBy(item => item.Title)
-                        : query.OrderBy(item => item.Description);
+                    switch (sortBy.ToLower())
+                    {
+                        case "title":
+                            query = query.OrderBy(item => item.Title);
+                            break;
+                        case "description":
+                            query = query.OrderBy(item => item.Description);
+                            break;
+                        case "id":
+                            query = query.OrderBy(item => item.ToDoItemId);
+                            break;
+                        default:
+                            throw new ArgumentException($"Invalid sort field: {sortBy}. Allowed values are 'title', 'description', or 'id'.");
+                    }
                 }
 
-                // Paginación
+                // Pagination
                 var totalItems = await query.CountAsync();
                 var items = await query.Skip((page - 1) * limit).Take(limit).ToListAsync();
 
@@ -123,10 +143,7 @@ namespace ToDoListAPI.Services
                 {
                     return false;
                 }
-
-                // Lógica de autorización (opcional)
-                // Aquí puedes verificar permisos si es necesario
-
+                
                 await _toDoItemRepository.DeleteItemAsync(itemId);
                 return true;
             }
