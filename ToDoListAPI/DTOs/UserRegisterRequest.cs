@@ -1,11 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ToDoListAPI.Models
+namespace ToDoListAPI.DTOs;
+
+public class UserRegisterRequest
 {
-    public class User 
-    {
-        [Key]
-        public int UserId { get; set; }
 
         [Required]
         [MaxLength(100)]
@@ -19,7 +17,4 @@ namespace ToDoListAPI.Models
         [Required]
         [MaxLength(200)]
         public string PasswordHash { get; set; } 
-
-        public virtual ICollection<ToDoItem>? ToDoItems { get; set; }  
-    } 
 }
