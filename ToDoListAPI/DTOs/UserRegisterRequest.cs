@@ -16,5 +16,5 @@ public class UserRegisterRequest
 
         [Required]
         [MaxLength(200)]
-        public string PasswordHash { get; set; } 
+        public string Password { get; set; } 
 }
