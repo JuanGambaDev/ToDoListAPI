@@ -31,13 +31,15 @@ public class AuthController : ControllerBase
         try
         {
             newUser.Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
+
+            var token = await _authService.RegisterNewUser(newUser);
             
-            var createdUser = await _authService.RegisterNewUser(newUser);
-            return Ok();
+            return Ok(new { Token = token });
         }
         catch (Exception ex)
         {
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { error = ex.Message });
+            _logger.LogError(ex, "Error al registrar nuevo usuario");
+            return StatusCode((int)HttpStatusCode.InternalServerError, new { error = ex.Message});
         }
 
     }
