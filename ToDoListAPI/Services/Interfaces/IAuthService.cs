@@ -8,5 +8,6 @@ public interface IAuthService {
 
     Task<string> RegisterNewUser (UserRegisterRequest newUser);
 
+    Task<string> AutenticateAsync (UserLoginRequest userCredentials);
 }
 

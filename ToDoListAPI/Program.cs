@@ -80,6 +80,8 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

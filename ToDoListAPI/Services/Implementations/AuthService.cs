@@ -5,6 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
+using BCrypt.Net;
 
 
 namespace ToDoListAPI.Services;
@@ -23,13 +24,11 @@ public class AuthService : IAuthService {
 
     public async Task<string> RegisterNewUser(UserRegisterRequest newUser)
     {
-        try
-        {
-            var userExists = await _authRepository.ValidateUserByEmailAsync(newUser.Email);
-            
-            if (userExists == true)
+
+
+            if (!await _authRepository.IsEmailUnique(newUser.Email))
             {
-                throw new Exception("El correo electrónico ya está en uso.");
+                throw new Exception("Email already in use.");
             }
 
             var user = new User 
@@ -39,20 +38,20 @@ public class AuthService : IAuthService {
                 PasswordHash = newUser.Password
             };
 
-            var createdUser = await _authRepository.AddUserAsync(user);
+            await _authRepository.AddUserAsync(user);
 
-            if (createdUser == null)
-            {
-                throw new Exception("Error al crear el usuario en la base de datos no devolvio usuario.");
-            }
+            return GenerateJwtToken(user);
 
-            return GenerateJwtToken(createdUser);
+       
+    }
 
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Error al registrar el nuevo usuario.", ex);
-        }
+    public async Task<string> AutenticateAsync (UserLoginRequest userCredentials)
+    {
+        var user = await _authRepository.GetUserByEmailAsync(userCredentials.Email);
+        if (user == null || !VerifyPassword(userCredentials.Password, user.PasswordHash))
+            throw new Exception("Invalid email or password.");
+
+        return GenerateJwtToken(user);
     }
 
     private string GenerateJwtToken(User user)
@@ -88,5 +87,14 @@ public class AuthService : IAuthService {
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    private string HashPassword(string password)
+    {
+        return BCrypt.Net.BCrypt.HashPassword(password);
+    }
+
+    private bool VerifyPassword(string password, string hashedPassword)
+    {
+        return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+    }
 
 }

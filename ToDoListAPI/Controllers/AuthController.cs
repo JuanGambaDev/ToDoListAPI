@@ -23,24 +23,35 @@ public class AuthController : ControllerBase
     [HttpPost] 
     public async Task<IActionResult> RegisterNewUser (UserRegisterRequest newUser)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
 
-        try
+         try
         {
-            newUser.Password = BCrypt.Net.BCrypt.HashPassword(newUser.Password);
-
-            var token = await _authService.RegisterNewUser(newUser);
-            
-            return Ok(new { Token = token });
+            var response = await _authService.RegisterNewUser(newUser);
+            return Ok(response);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error al registrar nuevo usuario");
-            return StatusCode((int)HttpStatusCode.InternalServerError, new { error = ex.Message});
+            _logger.LogError(ex, "Error during registration");
+            return BadRequest(ex.Message);
+        }
+        
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Login (UserLoginRequest userCredentials)
+    {
+        try
+        {
+            var response = await _authService.AutenticateAsync(userCredentials);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during login");
+            return Unauthorized(ex.Message);
         }
 
     }
+
+
 }

@@ -4,5 +4,6 @@ namespace ToDoListAPI.Repositories;
 
 public interface IAuthRepository {
     Task<User> AddUserAsync (User user);
-    Task<bool> ValidateUserByEmailAsync (string userEmail);
+    Task<bool> IsEmailUnique(string userEmail);
+    Task<User> GetUserByEmailAsync (string userEmail);
 }
