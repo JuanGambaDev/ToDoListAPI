@@ -9,5 +9,11 @@ public interface IAuthService {
     Task<string> RegisterNewUser (UserRegisterRequest newUser);
 
     Task<string> AutenticateAsync (UserLoginRequest userCredentials);
+
+    //string GenerateJwtToken(User user);
+
+    //bool VerifyPassword(string password, string hashedPassword);
+
+    //string HashPassword(string password);
 }
 

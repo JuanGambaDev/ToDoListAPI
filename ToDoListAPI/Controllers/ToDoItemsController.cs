@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using ToDoListAPI.DTOs;
 using ToDoListAPI.Models;
 using ToDoListAPI.Services;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace ToDoListAPI.Controllers
 {
@@ -13,6 +15,7 @@ namespace ToDoListAPI.Controllers
     /// Controller to handle task list operations.
     /// Provides endpoints to create, read, update, and delete task list items.
     /// </summary>
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ToDoItemsController : ControllerBase
@@ -42,20 +45,30 @@ namespace ToDoListAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetToDoItems(int page = 1, int limit = 10, string filter = null, string sortBy = null)
         {
-            // Validación de parámetros de paginación
             if (page <= 0)
             {
-                return BadRequest("El parámetro 'page' debe ser mayor que 0.");
+                _logger.LogWarning("Invalid page parameter: {Page}. It must be greater than 0.", page);
+                return BadRequest("The 'page' parameter must be greater than 0.");
             }
 
             if (limit <= 0)
             {
-                return BadRequest("El parámetro 'limit' debe ser mayor que 0.");
+                _logger.LogWarning("Invalid limit parameter: {Limit}. It must be greater than 0.", limit);
+                return BadRequest("The 'limit' parameter must be greater than 0.");
             }
+
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("User ID not found.");
+            }
+
+            var userId = int.Parse(userIdClaim.Value);
 
             try
             {
-                var pagedResult = await _toDoItemService.GetItemsAsync(page, limit, filter, sortBy);
+                
+                var pagedResult = await _toDoItemService.GetItemsByUserIdAsync(userId, page, limit, filter, sortBy);
                 return Ok(pagedResult);
             }
             catch (Exception ex)
@@ -73,11 +86,13 @@ namespace ToDoListAPI.Controllers
         [HttpGet("{itemId}")]
         public async Task<IActionResult> GetToDoItemById(int itemId)
         {
+
             try
             {
                 var item = await _toDoItemService.GetItemByIdAsync(itemId);
                 if (item == null)
                 {
+                    _logger.LogInformation("To-do item with ID {ItemId} not found.", itemId);
                     return NotFound();
                 }
 
@@ -101,12 +116,21 @@ namespace ToDoListAPI.Controllers
             // Model validation
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Model state is invalid when creating a new to-do item.");
                 return BadRequest(ModelState);
             }
 
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                return Unauthorized("User ID not found.");
+            }
+
+            var userId = int.Parse(userIdClaim.Value);
+
             try
             {
-                var toDoItemCreated = await _toDoItemService.AddItemAsync(newItem);
+                var toDoItemCreated = await _toDoItemService.AddItemAsync(userId, newItem);
                 return CreatedAtAction(nameof(GetToDoItemById), new { itemId = toDoItemCreated.ToDoItemId }, toDoItemCreated);
             }
             catch (Exception ex)
@@ -128,6 +152,7 @@ namespace ToDoListAPI.Controllers
             // Model validation
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Model state is invalid when updating to-do item with ID {ItemId}.", itemId);
                 return BadRequest(ModelState);
             }
 
@@ -136,6 +161,7 @@ namespace ToDoListAPI.Controllers
                 var itemUpdated = await _toDoItemService.UpdateItemAsync(itemId, itemRequest);
                 if (itemUpdated == null)
                 {
+                    _logger.LogInformation("To-do item with ID {ItemId} not found for update.", itemId);
                     return NotFound();
                 }
 
@@ -156,11 +182,13 @@ namespace ToDoListAPI.Controllers
         [HttpDelete("{itemId}")]
         public async Task<IActionResult> DeleteToDoItem(int itemId)
         {
+
             try
             {
                 var success = await _toDoItemService.DeleteItemAsync(itemId);
                 if (!success)
                 {
+                    _logger.LogInformation("To-do item with ID {ItemId} not found for deletion.", itemId);
                     return NotFound();
                 }
 
@@ -174,4 +202,5 @@ namespace ToDoListAPI.Controllers
         }
     }
 }
+
 

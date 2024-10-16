@@ -5,9 +5,9 @@ namespace ToDoListAPI.Services;
 
 public interface IToDoItemService 
 {
-    Task<PagedResult<ToDoItem>> GetItemsAsync(int page, int limit, string filter, string sortBy);
+    Task<PagedResult<ToDoItem>> GetItemsByUserIdAsync(int userId,int page, int limit, string filter, string sortBy);
     Task<ToDoItem> GetItemByIdAsync(int itemId);
-    Task<ToDoItem> AddItemAsync(ToDoItemRequest newItem);
+    Task<ToDoItem> AddItemAsync(int userId,ToDoItemRequest newItem);
     Task<ToDoItem> UpdateItemAsync(int id, ToDoItemRequest item);
     Task<bool> DeleteItemAsync(int itemId);
 }
