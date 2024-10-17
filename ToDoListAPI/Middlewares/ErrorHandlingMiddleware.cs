@@ -1,3 +1,6 @@
+namespace ToDoListAPI.Middlewares;
+
+
 public class ErrorHandlingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -13,6 +16,7 @@ public class ErrorHandlingMiddleware
     {
         try
         {
+            _logger.LogInformation("In Rate Limiting Middleware");
             await _next(context);
         }
         catch (Exception ex)

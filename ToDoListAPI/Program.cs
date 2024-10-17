@@ -3,10 +3,13 @@ using Microsoft.OpenApi.Models;
 using ToDoListAPI.Data;
 using ToDoListAPI.Repositories;
 using ToDoListAPI.Services;
+using ToDoListAPI.Middlewares;
 using System.Reflection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using AspNetCoreRateLimit;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -83,6 +86,20 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+//builder.Services.AddOptions();
+builder.Services.AddMemoryCache();
+
+
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+//builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitingPolicies"));
+
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>(); 
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+
+
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 
@@ -105,6 +122,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
+//app.UseMiddleware<RateLimitingMiddleware>();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -122,7 +141,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseIpRateLimiting();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
 
