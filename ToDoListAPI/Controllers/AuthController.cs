@@ -81,7 +81,7 @@ namespace ToDoListAPI.Controllers
             }
         }
 
-        [HttpPost("/Refresh-token")]
+        [HttpPost("/refresh-token")]
         public IActionResult RefreshToken(string refreshToken)
         {
             try
@@ -101,7 +101,7 @@ namespace ToDoListAPI.Controllers
             }
         }
 
-        [HttpPost("logout")]
+        [HttpPost("/logout")]
         public IActionResult Logout([FromBody] string refreshToken)
         {
             if (string.IsNullOrEmpty(refreshToken))

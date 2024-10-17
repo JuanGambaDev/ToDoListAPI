@@ -59,6 +59,7 @@ builder.Services.AddScoped<IToDoItemRepository, ToDoItemRepository>();
 builder.Services.AddScoped<IToDoItemService, ToDoItemService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // Configuración de JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -131,7 +132,7 @@ if (app.Environment.IsDevelopment())
     (
         c =>
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Mi API V1");
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "ToDoListAPI V1");
             c.RoutePrefix = string.Empty; // Esto hace que Swagger UI esté en la raíz
         }
     );
