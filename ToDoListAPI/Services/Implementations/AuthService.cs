@@ -7,18 +7,23 @@ using System.Security.Claims;
 using System.Text;
 using BCrypt.Net;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
+using System.Security.Cryptography;
+
 
 namespace ToDoListAPI.Services
 {
     public class AuthService : IAuthService
     {
         private readonly IAuthRepository _authRepository;
+        private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IAuthRepository authRepository, IConfiguration configuration, ILogger<AuthService> logger)
+        public AuthService(IAuthRepository authRepository, IUserRepository userRepository, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _authRepository = authRepository;
+            _userRepository = userRepository;
             _configuration = configuration;
             _logger = logger;
         }
@@ -31,7 +36,7 @@ namespace ToDoListAPI.Services
                 throw new ArgumentNullException(nameof(newUser), "User cannot be null.");
             }
 
-            if (!await _authRepository.IsEmailUnique(newUser.Email))
+            if (!await _authRepository.IsEmailUniqueAsync(newUser.Email))
             {
                 _logger.LogWarning("Email already in use: {Email}.", newUser.Email);
                 throw new Exception("Email already in use.");
@@ -46,13 +51,13 @@ namespace ToDoListAPI.Services
                 PasswordHash = newUser.Password
             };
 
-            await _authRepository.AddUserAsync(user);
+            await _userRepository.AddUserAsync(user);
             _logger.LogInformation("New user registered: {Email}.", user.Email);
 
-            return GenerateJwtToken(user);
+            return GenerateAccessToken(user);
         }
 
-        public async Task<string> AutenticateAsync (UserLoginRequest userCredentials)
+        public async Task<(string accessToken, string refreshToken)> AutenticateAsync (UserLoginRequest userCredentials)
         {
             if (userCredentials == null)
             {
@@ -60,18 +65,67 @@ namespace ToDoListAPI.Services
                 throw new ArgumentNullException(nameof(userCredentials), "User credentials cannot be null.");
             }
 
-            var user = await _authRepository.GetUserByEmailAsync(userCredentials.Email);
+            var user = await _userRepository.GetUserByEmailAsync(userCredentials.Email);
             if (user == null || !VerifyPassword(userCredentials.Password, user.PasswordHash))
             {
                 _logger.LogWarning("Invalid login attempt for email: {Email}.", userCredentials.Email);
                 throw new Exception("Invalid email or password.");
             }
 
+            var accessToken = GenerateAccessToken(user);
+            var refreshToken = GenerateRefreshToken();
+
+            _authRepository.SaveRefreshTokenAsync(new RefreshToken {
+                Token = refreshToken,
+                ExpiryDate = DateTime.UtcNow.AddDays(30),
+                Revoked = false,
+                UserId = user.UserId
+            });
+
             _logger.LogInformation("User authenticated: {Email}.", user.Email);
-            return GenerateJwtToken(user);
+            return (accessToken, refreshToken);
         }
 
-        private string GenerateJwtToken(User user)
+        public async Task<string> RefreshTokenAsync(string token)
+        {
+            var storedToken = await _authRepository.GetRefreshTokenAsync(token);
+            if (storedToken == null || storedToken.ExpiryDate < DateTime.UtcNow || storedToken.Revoked)
+            {
+                throw new UnauthorizedAccessException("Invalid refresh token");
+            }
+
+            // Optionally revoke old token
+            _authRepository.RevokeRefreshTokenAsync(token);
+
+            // Generate new tokens
+            var user = await _userRepository.GetUserByIdAsync(storedToken.UserId);
+            var newAccessToken = GenerateAccessToken(user);
+            var newRefreshToken = GenerateRefreshToken();
+
+            // Save new refresh token
+            _authRepository.SaveRefreshTokenAsync(new RefreshToken
+            {
+                UserId = user.UserId,
+                Token = newRefreshToken,
+                ExpiryDate = DateTime.UtcNow.AddDays(30),
+                Revoked = false
+            });
+
+            return newAccessToken; // Return new access token
+        }
+
+        public async Task RevokeRefreshToken(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new ArgumentException("Token cannot be null or empty.", nameof(token));
+            }
+
+            await _authRepository.RevokeRefreshTokenAsync(token);
+        }
+
+
+        private string GenerateAccessToken(User user)
         {
             if (user == null)
             {
@@ -106,6 +160,16 @@ namespace ToDoListAPI.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+        private string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[32];
+        using (var rng = new RNGCryptoServiceProvider())
+        {
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
+    }
 
         private string HashPassword(string password)
         {

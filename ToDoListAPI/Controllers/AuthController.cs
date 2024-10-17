@@ -66,8 +66,8 @@ namespace ToDoListAPI.Controllers
 
             try
             {
-                var response = await _authService.AutenticateAsync(userCredentials);
-                return Ok(response);
+                var (accessToken, refreshToken) = await _authService.AutenticateAsync(userCredentials);
+                return Ok(new { AccessToken = accessToken, RefreshToken = refreshToken });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -80,6 +80,47 @@ namespace ToDoListAPI.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred. Please try again later.");
             }
         }
+
+        [HttpPost("/Refresh-token")]
+        public IActionResult RefreshToken(string refreshToken)
+        {
+            try
+            {
+                var accessToken = _authService.RefreshTokenAsync(refreshToken);
+                return Ok(new { AccessToken = accessToken });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Refresh token failed: {Message}", ex.Message);
+                return Unauthorized(new { Message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during refresh token");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An unexpected error occurred. Please try again later.");
+            }
+        }
+
+        [HttpPost("logout")]
+        public IActionResult Logout([FromBody] string refreshToken)
+        {
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                return BadRequest("Refresh token is required.");
+            }
+
+            try
+            {
+                _authService.RevokeRefreshToken(refreshToken);
+                return Ok(new { Message = "Successfully logged out." });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (optional)
+                return StatusCode(500, "Internal server error. " + ex.Message);
+            }
+        }
+
     }
 }
 

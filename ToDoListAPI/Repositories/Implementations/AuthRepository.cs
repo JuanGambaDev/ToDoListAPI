@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
+using ToDoListAPI.Migrations;
 
 namespace ToDoListAPI.Repositories
 {
@@ -18,33 +19,7 @@ namespace ToDoListAPI.Repositories
             _logger = logger;
         }
 
-        public async Task<User> AddUserAsync(User user)
-        {
-            if (user == null)
-            {
-                _logger.LogWarning("Attempted to add a null user.");
-                throw new ArgumentNullException(nameof(user), "User cannot be null.");
-            }
-
-            try
-            {
-                await _context.Users.AddAsync(user);
-                await _context.SaveChangesAsync();
-                return user;
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database error occurred while adding user with email {UserEmail}.", user.Email);
-                throw new Exception("Database error occurred while adding the user.", ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while adding user with email {UserEmail}.", user.Email);
-                throw new Exception("An unexpected error occurred while adding the user.", ex);
-            }
-        }
-
-        public async Task<bool> IsEmailUnique(string userEmail)
+        public async Task<bool> IsEmailUniqueAsync(string userEmail)
         {
             if (string.IsNullOrEmpty(userEmail))
             {
@@ -58,29 +33,65 @@ namespace ToDoListAPI.Repositories
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking if email {UserEmail} is unique.", userEmail);
+                _logger.LogError(ex, "Error checking if email {userEmail} is unique.", userEmail);
                 throw new Exception("Error checking email uniqueness.", ex);
             }
         }
 
-        public async Task<User> GetUserByEmailAsync(string userEmail)
+        public async void SaveRefreshTokenAsync(RefreshToken refreshToken)
         {
-            if (string.IsNullOrEmpty(userEmail))
-            {
-                _logger.LogWarning("Attempted to fetch user with a null or empty email.");
-                throw new ArgumentException("Email cannot be null or empty.", nameof(userEmail));
-            }
-
             try
             {
-                return await _context.Users.SingleOrDefaultAsync(u => u.Email == userEmail);
+                await _context.RefreshTokens.AddAsync(refreshToken);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error occurred while adding refresh token {refreshToken}.", refreshToken);
+                throw new Exception("Database error occurred while adding refresh token.", ex);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching user with email {UserEmail}.", userEmail);
-                throw new Exception("Error fetching user by email.", ex);
+                _logger.LogError(ex, "An unexpected error occurred while adding refresh token {refreshToken}.", refreshToken);
+                throw new Exception("An unexpected error occurred while adding refresh token.", ex);
             }
         }
+
+        public async Task<RefreshToken> GetRefreshTokenAsync(string token)
+        {
+            try
+            {
+                return await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token && !rt.Revoked);
+            }
+            catch (Exception ex){
+                _logger.LogError(ex, $"Error fetching refresh token {token}.", token);
+                throw new Exception("Error fetching refresh token.", ex);
+            }
+        }
+
+        public async Task RevokeRefreshTokenAsync(string token){
+            try
+            {
+                var refreshToken = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == token);
+                if (refreshToken != null)
+                {
+                    refreshToken.Revoked = true;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error occurred while revoking refresh token: {Token}", token);
+                throw new Exception("Database error occurred while updating refresh token.", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred while revoking refresh token: {Token}", token);
+                throw new Exception("An unexpected error occurred while revoking refresh token.", ex);
+            }
+        }
+
+
     }
 }
 

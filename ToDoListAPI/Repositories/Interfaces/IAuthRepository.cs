@@ -3,7 +3,8 @@ using ToDoListAPI.Models;
 namespace ToDoListAPI.Repositories;
 
 public interface IAuthRepository {
-    Task<User> AddUserAsync (User user);
-    Task<bool> IsEmailUnique(string userEmail);
-    Task<User> GetUserByEmailAsync (string userEmail);
+    Task<bool> IsEmailUniqueAsync(string userEmail);
+    void SaveRefreshTokenAsync(RefreshToken refreshToken);
+    Task<RefreshToken> GetRefreshTokenAsync(string token);
+    Task RevokeRefreshTokenAsync(string token);
 }

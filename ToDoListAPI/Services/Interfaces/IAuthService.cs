@@ -7,13 +7,9 @@ namespace ToDoListAPI.Services;
 public interface IAuthService {
 
     Task<string> RegisterNewUser (UserRegisterRequest newUser);
+    Task<(string accessToken, string refreshToken)> AutenticateAsync (UserLoginRequest userCredentials);
+    Task RevokeRefreshToken (string token);
+    Task<string> RefreshTokenAsync(string token);
 
-    Task<string> AutenticateAsync (UserLoginRequest userCredentials);
-
-    //string GenerateJwtToken(User user);
-
-    //bool VerifyPassword(string password, string hashedPassword);
-
-    //string HashPassword(string password);
 }
 

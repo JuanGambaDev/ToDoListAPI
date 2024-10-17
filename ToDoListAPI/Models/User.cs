@@ -21,5 +21,6 @@ namespace ToDoListAPI.Models
         public string PasswordHash { get; set; } 
 
         public virtual ICollection<ToDoItem>? ToDoItems { get; set; }  
+        public virtual ICollection<RefreshToken> RefreshTokens { get; set; }
     } 
 }
