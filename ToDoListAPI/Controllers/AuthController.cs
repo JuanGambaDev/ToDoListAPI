@@ -82,11 +82,11 @@ namespace ToDoListAPI.Controllers
         }
 
         [HttpPost("/refresh-token")]
-        public IActionResult RefreshToken(string refreshToken)
+        public async Task<IActionResult> RefreshToken(string refreshToken)
         {
             try
             {
-                var accessToken = _authService.RefreshTokenAsync(refreshToken);
+                var accessToken = await _authService.RefreshTokenAsync(refreshToken);
                 return Ok(new { AccessToken = accessToken });
             }
             catch (UnauthorizedAccessException ex)
@@ -102,7 +102,7 @@ namespace ToDoListAPI.Controllers
         }
 
         [HttpPost("/logout")]
-        public IActionResult Logout([FromBody] string refreshToken)
+        public async Task<IActionResult> Logout([FromBody] string refreshToken)
         {
             if (string.IsNullOrEmpty(refreshToken))
             {
@@ -111,7 +111,7 @@ namespace ToDoListAPI.Controllers
 
             try
             {
-                _authService.RevokeRefreshToken(refreshToken);
+                await _authService.RevokeRefreshToken(refreshToken);
                 return Ok(new { Message = "Successfully logged out." });
             }
             catch (Exception ex)
